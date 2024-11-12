@@ -34,48 +34,67 @@ class BindSetup():
             with open("db.ip", "w") as file:
                 file.write(self.Forward_Db_File())
 
+            with open("named.conf.local", "a") as file:
+                file.write(self.Forward_Zone_file(self))
+
         #     with open("db.domain", "w") as file:
         #         self.dbRecord(ip="40.40.40.100")
         #         self.dbRecord(ip="40.40.40.101")
         #         file.write(createDBLocal())
           
-    def Forward_Db_File(self):
+    # def Forward_Db_File(self):
 
-        return f"$TTL    604800 \n \
-            @       IN      SOA     ns1.{self.zone}. root.{self.zone}. (\n \
-                                    2         ; Serial\n \
-                                604800         ; Refresh\n \
-                                86400         ; Retry\n \
-                                2419200         ; Expire\n \
-                                604800 )       ; Negative Cache TTL\n \
-        ;\n \
-        @       IN      NS      ns1.{self.zone}.\n \
-        {'\n'.join(self.DB_RECORDS)} \n\
-        @       IN      AAAA    ::1\n "
+    #     return f"$TTL    604800 \n \
+    #         @       IN      SOA     ns1.{self.zone}. root.{self.zone}. (\n \
+    #                                 2         ; Serial\n \
+    #                             604800         ; Refresh\n \
+    #                             86400         ; Retry\n \
+    #                             2419200         ; Expire\n \
+    #                             604800 )       ; Negative Cache TTL\n \
+    #     ;\n \
+    #     @       IN      NS      ns1.{self.zone}.\n \
+    #     {'\n'.join(self.DB_RECORDS)} \n\
+    #     @       IN      AAAA    ::1\n "
+
+    def Forward_Db_File(self):
+        return '''$TTL    604800
+            @       IN      SOA     ns1.{zone}. root.{zone}. (
+                                        2         ; Serial
+                                    604800         ; Refresh
+                                    86400         ; Retry
+                                    2419200         ; Expire
+                                    604800 )       ; Negative Cache TTL
+            ;
+            @       IN      NS      ns1.{zone}.
+            {records}
+            @       IN      AAAA    ::1
+            '''.format(zone=self.zone, records='\n'.join(self.DB_RECORDS))
+
     
     def Resverse_Db_File(self):
-        
-        return f";\n \
-        ; BIND reverse data file for local loopback interface\n \
+
+        return '''; \n
+        ; BIND reverse data file for local loopback interface \n
+        ;\n
+        $TTL    604800\n 
+        @       IN      SOA     {zone}. root.{zone}. (\n 
+                                    1         ; Serial\n 
+                                604800         ; Refresh\n 
+                                86400         ; Retry\n 
+                                2419200         ; Expire\n 
+                                604800 )       ; Negative Cache TTL\n 
         ;\n \
-        $TTL    604800\n \
-        @       IN      SOA     {self.domain}. root.{self.domain}. (\n \
-                                    1         ; Serial\n \
-                                604800         ; Refresh\n \
-                                86400         ; Retry\n \
-                                2419200         ; Expire\n \
-                                604800 )       ; Negative Cache TTL\n \
-        ;\n \
-        @       IN      NS      {self.domain}.\n \
-        {'\n'.join(self.DB_REVERSE_RECORD)} \
-        1.0.0   IN      PTR     localhost.\n"
+        @       IN      NS      {zone}.\n 
+        {records} \
+        1.0.0   IN      PTR     localhost.\n
+        '''.format(zone=self.zone, records='\n'.join(self.DB_REVERSE_RECORD))
 
     def Forward_Zone_file(self):
-        return "//forward lookup zone \n\
-                zone \"a10.networks.com\" IN { \n\
-                type master; \n\
-                file \"/etc/bind/db.networks.com\"; \n\
-        };\n"
+        return '''//forward lookup zone \n
+                zone \"{zone}\" IN { \n
+                type master; \n
+                file \"/etc/bind/db.ip\"; \n\
+        };\n'''.format(zone=self.zone)
     
     def dbRecord(self, ip, prefix ="www", ns = "A"):
         self.DB_RECORDS.append(f"{prefix}     IN      {ns}       {ip}")

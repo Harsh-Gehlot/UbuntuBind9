@@ -19,7 +19,7 @@ class BindSetup():
         try:
             subprocess.run(["sudo", "apt", "install", "bind9"])
             time.sleep(10)
-            os.chdir("etc/bind9")
+            os.chdir("../etc/bind")
             print(os.getcwd())
         except FileNotFoundError:
             print(f"Error : FileNotFound ")
@@ -31,12 +31,16 @@ class BindSetup():
             subprocess.run(["sudo", "cp", "named.conf.options", "named.conf.options.orig"])
             subprocess.run(["sudo", "cp", "named.conf.local", "named.conf.local.orig"])
 
-            with open("db.ip", "w") as file:
+            with open("db."+self.zone, "w") as file:
                 file.write(self.Forward_Db_File())
 
             with open("named.conf.local", "a") as file:
-                file.write(self.Forward_Zone_file(self))
+                file.write(self.Forward_Zone_file())
 
+            with open("named.conf.options", "a+") as file:
+                content = file.readlines()
+                print(content)
+               print( "\n \n \n", self.NamedOptions())
         #     with open("db.domain", "w") as file:
         #         self.dbRecord(ip="40.40.40.100")
         #         self.dbRecord(ip="40.40.40.101")
@@ -96,6 +100,14 @@ class BindSetup():
                 file \"/etc/bind/db.ip\"; \n\
         };\n'''.format(zone=self.zone)
     
+    def NamedOptions(self):
+        return '''recursion yes;
+        listen-on {''' + self.IP_ADDRESS + '''; };
+        allow-transfer { none; };
+        forwarders {
+        8.8.8.8;
+        };'''
+
     def dbRecord(self, ip, prefix ="www", ns = "A"):
         self.DB_RECORDS.append(f"{prefix}     IN      {ns}       {ip}")
 
